@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Vault">
+    <title>Unlock | Legacy Vault</title>
+    <link rel="manifest" href="{{ url_for('manifest_json') }}">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="icon" href="{{ url_for('icon_svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page narrow">
+        <p class="eyebrow">Legacy Vault</p>
+        <h1>Unlock vault</h1>
+        {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+        <div id="approval-flow" class="stack">
+            <button id="start-approval" class="button primary" type="button">Approve on phone</button>
+            <div id="approval-box" hidden>
+                <img id="approval-qr" alt="Phone approval QR code" />
+                <p id="approval-status" class="muted">Waiting for approval on your phone…</p>
+                <input id="approval-token" type="hidden" value="" />
+            </div>
+        </div>
+
+        <form method="post" class="stack">
+            <label for="pin">PIN</label>
+            <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required
+                autofocus>
+            <button class="button primary" type="submit">Unlock with PIN</button>
+        </form>
+        <button id="install-app" class="primary" type="button" hidden>Install app</button>
+        <p id="ios-install-hint" class="muted" hidden>To install, tap Share, then Add to Home Screen.</p>
+    </main>
+    <script src="{{ url_for('approval_js') }}"></script>
+    <script src="/static/pwa.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>{{ name }} | Legacy Vault</title>
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page narrow">
+        <p class="eyebrow">Legacy Vault App</p>
+        <h1>{{ name }}</h1>
+        <p class="muted">{{ description }}</p>
+        {% if request.args.get('error') == 'file' %}<p class="error" role="alert">Choose a file before saving.</p>{% endif %}
+        {% if request.args.get('error') == 'too_large' %}<p class="error" role="alert">That file is larger than 25 MB.</p>{% endif %}
+        {% if request.args.get('error') == 'save' %}<p class="error" role="alert">The server could not save that file. Check that the vault is running and try again.</p>{% endif %}
+        {% if request.args.get('error') == 'missing' %}<p class="error" role="alert">Title and details are required.</p>{% endif %}
+        <section class="app-opened-panel">
+            <p class="success">Phone approval complete</p>
+            <h2>{{ name }} is open</h2>
+            <p class="muted">This protected app is running inside your Legacy Vault.</p>
+        </section>
+        <section class="saved-items" aria-labelledby="saved-items-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Private storage</p>
+                    <h2 id="saved-items-title">Saved items</h2>
+                </div>
+                <span class="app-count">{{ items|length }} saved</span>
+            </div>
+            <form class="item-form" method="post" action="{{ url_for('add_vault_app_item', app_id=app_id) }}">
+                <label for="item-title">Title</label>
+                <input id="item-title" name="title" type="text" placeholder="e.g. 2026 renewal" required>
+                <label for="item-content">Details</label>
+                <textarea id="item-content" name="content" rows="4"
+                    placeholder="Save the information you want to keep in this app" required></textarea>
+                <button class="button primary" type="submit">Save item</button>
+            </form>
+            {% if items %}
+            <div class="saved-item-list">
+                {% for item in items %}
+                <article class="saved-item">
+                    <div>
+                        <h3>{{ item.title }}</h3>
+                        <p>{{ item.content }}</p>
+                        <small class="muted">Saved {{ item.saved_at }}</small>
+                    </div>
+                    <form method="post" action="{{ url_for('delete_vault_app_item', app_id=app_id, item_id=item.id) }}">
+                        <button class="button delete-button" type="submit">Delete</button>
+                    </form>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty">No items saved here yet.</p>
+            {% endif %}
+        </section>
+        <section class="saved-items" aria-labelledby="files-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Documents and pictures</p>
+                    <h2 id="files-title">Saved files</h2>
+                </div>
+                <span class="app-count">{{ files|length }} saved</span>
+            </div>
+            <form class="item-form" method="post" enctype="multipart/form-data"
+                action="{{ url_for('upload_vault_app_file', app_id=app_id) }}">
+                <label for="app-file">Choose a picture or document</label>
+                <input id="app-file" name="file" type="file" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx"
+                    required>
+                <small class="muted">Pictures, PDFs, and common documents up to 25 MB.</small>
+                <button class="button primary" type="submit">Save file</button>
+            </form>
+            {% if files %}
+            <div class="saved-item-list">
+                {% for file in files %}
+                <article class="saved-item">
+                    <div>
+                        <h3><a href="{{ url_for('download_vault_app_file', app_id=app_id, filename=file) }}"
+                                target="_blank" rel="noopener">{{ file.split('_', 1)[1] if '_' in file else file }}</a>
+                        </h3>
+                        <small class="muted">Saved file</small>
+                    </div>
+                    <form method="post" action="{{ url_for('delete_vault_app_file', app_id=app_id, filename=file) }}">
+                        <button class="button delete-button" type="submit">Delete</button>
+                    </form>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty">No pictures or documents saved here yet.</p>
+            {% endif %}
+        </section>
+        <a class="button primary" href="{{ url_for('vault_page') }}">Back to vault</a>
+    </main>
+</body>
+
+</html>

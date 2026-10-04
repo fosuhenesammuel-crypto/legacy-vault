@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Approve unlock | Legacy Vault</title>
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page narrow">
+        <p class="eyebrow">Legacy Vault</p>
+        <h1>{% if app_name %}Approve {{ app_name }}{% else %}Approve laptop unlock{% endif %}</h1>
+        {% if error %}
+        <p class="error" role="alert">{{ error }}</p>
+        {% else %}
+        <p class="muted">A browser on your laptop is requesting approval from your phone.</p>
+        {% if approved %}
+        <p class="success">Approved. You can return to your laptop now.</p>
+        {% else %}
+        <form method="post" action="{{ url_for('approve_phone_request', token=token) }}" class="stack">
+            <button class="button primary" type="submit">Yes, it's me</button>
+        </form>
+        {% endif %}
+        {% endif %}
+    </main>
+</body>
+
+</html>

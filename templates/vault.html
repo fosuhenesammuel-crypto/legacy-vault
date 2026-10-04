@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Vault | Legacy Vault</title>
+    <link rel="manifest" href="{{ url_for('manifest_json') }}">
+    <link rel="icon" href="{{ url_for('icon_svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Legacy Vault</p>
+                <h1>Your vault</h1>
+            </div>
+            <a class="button" href="{{ url_for('logout') }}">Lock</a>
+        </header>
+        <p class="muted">Phone / other devices: <strong>{{ phone_url }}</strong> — same Wi-Fi as this computer, then unlock with PIN 1234.</p>
+        <nav class="toolbar" aria-label="Vault actions">
+            <a class="button primary" href="{{ url_for('upload_file') }}">Upload file</a>
+            <a class="button" href="{{ url_for('camera_page') }}">Use camera</a>
+            <a class="button" href="{{ url_for('gallery_page') }}">Gallery</a>
+        </nav>
+
+        {% if files %}
+        <ul class="file-grid">
+            {% for file in files %}<li><a href="{{ url_for('uploaded_file', filename=file) }}">{{ file }}</a></li>{%
+            endfor %}
+        </ul>
+        {% else %}<p class="empty">Your vault is empty.</p>{% endif %}
+
+        <section class="vault-apps" aria-labelledby="vault-apps-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Inside your vault</p>
+                    <h2 id="vault-apps-title">Vault Apps</h2>
+                </div>
+                <span class="app-count">3 protected apps</span>
+            </div>
+            <p class="muted">Choose an app, then approve it from your phone before it opens.</p>
+            <div class="app-grid">
+                <article class="app-card">
+                    <span class="app-icon">LD</span>
+                    <h3>Legal Docs</h3>
+                    <p class="muted">Contracts, wills, and legal records</p>
+                    <button class="button primary launch-app-btn" type="button" data-name="Legal Docs"
+                        data-app="legal-docs">Open app</button>
+                </article>
+                <article class="app-card">
+                    <span class="app-icon banking">BP</span>
+                    <h3>Banking Portal</h3>
+                    <p class="muted">Private banking and account records</p>
+                    <button class="button primary launch-app-btn" type="button" data-name="Banking Portal"
+                        data-app="banking">Open app</button>
+                </article>
+                <article class="app-card">
+                    <span class="app-icon health">HR</span>
+                    <h3>Health Records</h3>
+                    <p class="muted">Medical documents and care history</p>
+                    <button class="button primary launch-app-btn" type="button" data-name="Health Records"
+                        data-app="health-records">Open app</button>
+                </article>
+            </div>
+            <div id="launch-approval-panel" class="approval-panel" hidden>
+                <img id="launch-qr" alt="Phone approval QR code">
+                <div>
+                    <h3>Phone approval required</h3>
+                    <p id="launch-status" class="muted">Scan with your phone to approve opening the app.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="{{ url_for('approval_js') }}"></script>
+</body>
+
+</html>

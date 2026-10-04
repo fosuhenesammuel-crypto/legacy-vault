@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+uploads/
+temp_uploads/
+vault_app_data/
+assets/faces/
+.refact/
+.vscode/
+.DS_Store

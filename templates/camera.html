@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Camera | Legacy Vault</title>
+    <link rel="manifest" href="{{ url_for('manifest_json') }}">
+    <link rel="icon" href="{{ url_for('icon_svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page narrow">
+        <p class="eyebrow">Legacy Vault</p>
+        <h1>Capture an image</h1>
+        <video id="camera-preview" autoplay playsinline></video>
+        <canvas id="camera-canvas" hidden></canvas>
+        <p id="camera-status" class="muted">Allow camera access to begin.</p>
+        <div class="toolbar"><button id="capture-button" class="button primary" type="button">Capture</button><a
+                class="button" href="{{ url_for('vault_page') }}">Cancel</a></div>
+    </main>
+    <script src="{{ url_for('app_js') }}"></script>
+    <script src="{{ url_for('camera_js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Gallery | Legacy Vault</title>
+    <link rel="manifest" href="{{ url_for('manifest_json') }}">
+    <link rel="icon" href="{{ url_for('icon_svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Legacy Vault</p>
+                <h1>Gallery</h1>
+            </div><a class="button" href="{{ url_for('vault_page') }}">Back to vault</a>
+        </header>
+        {% if files %}<ul class="file-grid">{% for file in files %}<li><a
+                    href="{{ url_for('uploaded_file', filename=file) }}">{{ file }}</a>
+                <form method="post" action="{{ url_for('delete_file', filename=file) }}"><button class="button danger"
+                        type="submit">Delete</button></form>
+            </li>{% endfor %}</ul>{% else %}<p class="empty">No uploaded files yet.</p>{% endif %}
+    </main>
+</body>
+
+</html>
