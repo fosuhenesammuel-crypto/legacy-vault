@@ -18,3 +18,5 @@ services:
         generateValue: true
       - key: VAULT_PIN
         sync: false
+      - key: DOCUMENT_APP_PASSWORD
+        sync: false

@@ -37,9 +37,13 @@ needs a durable, protected backup strategy before hosting private documents.
 This repo includes a Render Blueprint in `render.yaml`. It defines a paid Starter
 web service and a 1 GB persistent disk so uploaded files and vault records
 survive restarts. In Render, connect this repository, set `VAULT_PIN` to a
-private value of at least 8 characters when prompted, then deploy. Render
-generates the session secret and provides the HTTPS URL.
+private value of at least 8 characters when prompted, set
+`DOCUMENT_APP_PASSWORD` to the password for Legal Docs, Banking, and Health
+Records, then deploy. Render generates the session secret and provides the
+HTTPS URL.
 
 The generated configuration protects session cookies with HTTPS and refuses to
 start in production if the PIN or secret key is missing. Keep the deployment
-URL private and set `VAULT_PIN` only in Render's environment settings.
+URL private and set both `VAULT_PIN` and `DOCUMENT_APP_PASSWORD` only in
+Render's environment settings. For local development, the document-app password
+defaults to `024624`; set `DOCUMENT_APP_PASSWORD` to override it.

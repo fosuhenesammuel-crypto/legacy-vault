@@ -14,12 +14,16 @@
         <p class="eyebrow">Legacy Vault App</p>
         <h1>{{ name }}</h1>
         <p class="muted">{{ description }}</p>
-        {% if request.args.get('error') == 'file' %}<p class="error" role="alert">Choose a file before saving.</p>{% endif %}
-        {% if request.args.get('error') == 'too_large' %}<p class="error" role="alert">That file is larger than 25 MB.</p>{% endif %}
-        {% if request.args.get('error') == 'save' %}<p class="error" role="alert">The server could not save that file. Check that the vault is running and try again.</p>{% endif %}
-        {% if request.args.get('error') == 'missing' %}<p class="error" role="alert">Title and details are required.</p>{% endif %}
+        {% if request.args.get('error') == 'file' %}<p class="error" role="alert">Choose a file before saving.</p>{%
+        endif %}
+        {% if request.args.get('error') == 'too_large' %}<p class="error" role="alert">That file is larger than 25 MB.
+        </p>{% endif %}
+        {% if request.args.get('error') == 'save' %}<p class="error" role="alert">The server could not save that file.
+            Check that the vault is running and try again.</p>{% endif %}
+        {% if request.args.get('error') == 'missing' %}<p class="error" role="alert">Title and details are required.</p>
+        {% endif %}
         <section class="app-opened-panel">
-            <p class="success">Phone approval complete</p>
+            <p class="success">Document password accepted</p>
             <h2>{{ name }} is open</h2>
             <p class="muted">This protected app is running inside your Legacy Vault.</p>
         </section>

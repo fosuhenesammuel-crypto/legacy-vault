@@ -3,10 +3,11 @@ import os
 import socket
 import uuid
 import base64
+import hmac
 import json
 from datetime import datetime, timezone
-from io import BytesIO
 import qrcode
+from qrcode.image.svg import SvgImage
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
@@ -19,6 +20,8 @@ APP_ITEMS_FILE = os.path.join(APP_DATA_DIR, 'items.json')
 APP_UPLOAD_DIR = os.path.join(APP_DATA_DIR, 'files')
 IS_PRODUCTION = os.environ.get('APP_ENV') == 'production'
 VAULT_PIN = os.environ.get('VAULT_PIN', '1234' if not IS_PRODUCTION else '')
+DOCUMENT_APP_PASSWORD = os.environ.get(
+    'DOCUMENT_APP_PASSWORD', '024624' if not IS_PRODUCTION else '')
 APPROVAL_REQUESTS = {}
 APP_LAUNCHES = {
     'legal-docs': {
@@ -46,11 +49,9 @@ def generate_qr_data_url(data):
     qr.add_data(data)
     qr.make(fit=True)
 
-    image = qr.make_image(fill_color='black', back_color='white')
-    buffer = BytesIO()
-    image.save(buffer, format='PNG')
-    return 'data:image/png;base64,' + base64.b64encode(
-        buffer.getvalue()).decode('ascii')
+    image = qr.make_image(image_factory=SvgImage)
+    return 'data:image/svg+xml;base64,' + base64.b64encode(
+        image.to_string()).decode('ascii')
 
 
 def lan_ip():
@@ -121,9 +122,11 @@ def save_app_items(items):
 
 app = Flask(__name__)
 secret_key = os.environ.get('SECRET_KEY')
-if IS_PRODUCTION and (not secret_key or len(VAULT_PIN) < 8):
+if IS_PRODUCTION and (not secret_key or len(VAULT_PIN) < 8
+                      or not DOCUMENT_APP_PASSWORD):
     raise RuntimeError(
-        'Production requires SECRET_KEY and a VAULT_PIN of at least 8 characters')
+        'Production requires SECRET_KEY, VAULT_PIN of at least 8 characters, '
+        'and DOCUMENT_APP_PASSWORD')
 app.secret_key = secret_key or 'legacy-vault-development-key'
 app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -208,6 +211,10 @@ ensure_directory(APP_UPLOAD_DIR)
 
 def is_unlocked():
     return session.get('vault_unlocked') is True
+
+
+def is_app_unlocked(app_id):
+    return app_id in session.get('unlocked_apps', [])
 
 
 @app.route('/')
@@ -306,22 +313,9 @@ def begin_app_launch():
     if not selected_app:
         return jsonify({'error': 'Unknown vault app'}), 400
 
-    token = uuid.uuid4().hex
-
-    APPROVAL_REQUESTS[token] = {
-        'approved': False,
-        'type': 'app_launch',
+    return jsonify({
         'app_name': selected_app['name'],
         'target_url': url_for('vault_app_page', app_id=app_id),
-    }
-
-    verify_url = f'{phone_base_url()}{url_for("verify_phone_approval", token=token)}'
-    return jsonify({
-        'token': token,
-        'verify_url': verify_url,
-        'app_name': selected_app['name'],
-        'target_url': APPROVAL_REQUESTS[token]['target_url'],
-        'qr_code': generate_qr_data_url(verify_url),
     })
 
 
@@ -351,13 +345,25 @@ def vault_page():
 
 
 @app.route('/vault-app/<app_id>')
+@app.route('/vault-app/<app_id>', methods=['POST'])
 def vault_app_page(app_id):
-    if not is_unlocked():
-        return redirect(url_for('unlock_page'))
-
     selected_app = APP_LAUNCHES.get(app_id)
     if not selected_app:
         return 'Vault app not found', 404
+
+    if not is_app_unlocked(app_id):
+        error = None
+        if request.method == 'POST':
+            password = request.form.get('password', '')
+            if hmac.compare_digest(password, DOCUMENT_APP_PASSWORD):
+                unlocked_apps = set(session.get('unlocked_apps', []))
+                unlocked_apps.add(app_id)
+                session['unlocked_apps'] = sorted(unlocked_apps)
+                return redirect(url_for('vault_app_page', app_id=app_id))
+            error = 'Incorrect password.'
+        return render_template(
+            'document_unlock.html', app_id=app_id, **selected_app, error=error)
+
     items = load_app_items()[app_id]
     app_file_dir = os.path.join(APP_UPLOAD_DIR, app_id)
     ensure_directory(app_file_dir)
@@ -373,10 +379,10 @@ def vault_app_page(app_id):
 
 @app.route('/vault-app/<app_id>/uploads', methods=['POST'])
 def upload_vault_app_file(app_id):
-    if not is_unlocked():
-        return redirect(url_for('unlock_page'))
     if app_id not in APP_LAUNCHES:
         return 'Vault app not found', 404
+    if not is_app_unlocked(app_id):
+        return redirect(url_for('vault_app_page', app_id=app_id))
 
     uploaded_file = request.files.get('file')
     if not uploaded_file or not uploaded_file.filename:
@@ -398,20 +404,20 @@ def upload_vault_app_file(app_id):
 
 @app.route('/vault-app/<app_id>/uploads/<path:filename>')
 def download_vault_app_file(app_id, filename):
-    if not is_unlocked():
-        return redirect(url_for('unlock_page'))
     if app_id not in APP_LAUNCHES:
         return 'Vault app not found', 404
+    if not is_app_unlocked(app_id):
+        return redirect(url_for('vault_app_page', app_id=app_id))
     return send_from_directory(os.path.join(APP_UPLOAD_DIR, app_id), filename)
 
 
 @app.route('/vault-app/<app_id>/uploads/<path:filename>/delete',
            methods=['POST'])
 def delete_vault_app_file(app_id, filename):
-    if not is_unlocked():
-        return redirect(url_for('unlock_page'))
     if app_id not in APP_LAUNCHES:
         return 'Vault app not found', 404
+    if not is_app_unlocked(app_id):
+        return redirect(url_for('vault_app_page', app_id=app_id))
 
     safe_name = os.path.basename(filename)
     file_path = os.path.join(APP_UPLOAD_DIR, app_id, safe_name)
@@ -422,12 +428,11 @@ def delete_vault_app_file(app_id, filename):
 
 @app.route('/vault-app/<app_id>/items', methods=['POST'])
 def add_vault_app_item(app_id):
-    if not is_unlocked():
-        return redirect(url_for('unlock_page'))
-
     selected_app = APP_LAUNCHES.get(app_id)
     if not selected_app:
         return 'Vault app not found', 404
+    if not is_app_unlocked(app_id):
+        return redirect(url_for('vault_app_page', app_id=app_id))
 
     title = request.form.get('title', '').strip()
     content = request.form.get('content', '').strip()
@@ -450,10 +455,10 @@ def add_vault_app_item(app_id):
 
 @app.route('/vault-app/<app_id>/items/<item_id>/delete', methods=['POST'])
 def delete_vault_app_item(app_id, item_id):
-    if not is_unlocked():
-        return redirect(url_for('unlock_page'))
     if app_id not in APP_LAUNCHES:
         return 'Vault app not found', 404
+    if not is_app_unlocked(app_id):
+        return redirect(url_for('vault_app_page', app_id=app_id))
 
     items = load_app_items()
     items[app_id] = [
@@ -466,6 +471,7 @@ def delete_vault_app_item(app_id, item_id):
 @app.route('/logout')
 def logout():
     session.pop('vault_unlocked', None)
+    session.pop('unlocked_apps', None)
     return redirect(url_for('unlock_page'))
 
 

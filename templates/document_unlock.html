@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Unlock {{ name }} | Legacy Vault</title>
+    <link rel="stylesheet" href="{{ url_for('style_css') }}">
+</head>
+
+<body>
+    <main class="page narrow">
+        <p class="eyebrow">Legacy Vault</p>
+        <h1>{{ name }}</h1>
+        <p class="muted">{{ description }}</p>
+        <section class="saved-items">
+            <h2>Enter document password</h2>
+            {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+            <form class="item-form" method="post">
+                <label for="document-password">Password</label>
+                <input id="document-password" name="password" type="password" inputmode="numeric"
+                    autocomplete="current-password" required autofocus>
+                <button class="button primary" type="submit">Unlock documents</button>
+            </form>
+        </section>
+        <a class="button" href="{{ url_for('vault_page') }}">Back to vault</a>
+    </main>
+</body>
+
+</html>

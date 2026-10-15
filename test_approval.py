@@ -39,7 +39,7 @@ class PhoneApprovalFlowTests(unittest.TestCase):
         unlock = self.client.get('/unlock')
         self.assertIn('Approve on phone', unlock.get_data(as_text=True))
 
-    def test_app_launch_request_starts_phone_approval(self):
+    def test_app_launch_returns_direct_password_gate_url(self):
         response = self.client.get('/begin_app_launch',
                                    query_string={'app': 'legal-docs'})
 
@@ -47,11 +47,38 @@ class PhoneApprovalFlowTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload['app_name'], 'Legal Docs')
         self.assertEqual(payload['target_url'], '/vault-app/legal-docs')
-        self.assertIn('token', payload)
+
+    def test_document_app_requires_its_password(self):
+        page = self.client.get('/vault-app/legal-docs')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('Enter document password', page.get_data(as_text=True))
+
+        denied = self.client.post('/vault-app/legal-docs',
+                                  data={'password': 'wrong'})
+        self.assertEqual(denied.status_code, 200)
+        self.assertIn('Incorrect password', denied.get_data(as_text=True))
+
+        unlocked = self.client.post('/vault-app/legal-docs',
+                                    data={'password': '024624'})
+        self.assertEqual(unlocked.status_code, 302)
+        self.assertEqual(unlocked.headers['Location'], '/vault-app/legal-docs')
+
+        legal_page = self.client.get('/vault-app/legal-docs')
+        self.assertIn('Saved items', legal_page.get_data(as_text=True))
+        health_page = self.client.get('/vault-app/health-records')
+        self.assertIn('Enter document password', health_page.get_data(as_text=True))
+
+    def test_document_app_items_require_category_unlock(self):
+        response = self.client.post('/vault-app/banking/items', data={
+            'title': 'Private account',
+            'content': 'Account details',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers['Location'], '/vault-app/banking')
 
     def test_vault_app_item_is_saved_and_visible(self):
         with self.client.session_transaction() as session:
-            session['vault_unlocked'] = True
+            session['unlocked_apps'] = ['legal-docs']
 
         save = self.client.post('/vault-app/legal-docs/items',
                                 data={
